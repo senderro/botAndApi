@@ -20,10 +20,13 @@ client.once("ready", () => {
   console.log(`🤖 Bot conectado como ${client.user?.tag}`);
 });
 
+
+
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  // 📌 /register 0x...
+  
   if (message.content.startsWith("/register ")) {
     const parts = message.content.trim().split(" ");
     const address = parts[1];
@@ -58,38 +61,45 @@ client.on("messageCreate", async (message) => {
   if (message.content.startsWith("/send ")) {
     const parts = message.content.trim().split(" ");
     if (parts.length < 4 || message.mentions.users.size === 0) {
-      return message.reply("❌ Use the format: `/send @user amount tokenType`");
+      return message.reply("❌ Use o formato: `/send @usuário quantidade tipoDeToken`");
     }
-
+  
     const toUser = message.mentions.users.first();
     const amount = parts[2];
     const tokenType = parts[3];
-
+  
     if (!toUser) {
-      return message.reply("❌ Could not identify the user to send to.");
+      return message.reply("❌ Não foi possível identificar o usuário destinatário.");
     }
-
-    const payload = {
-      from: `${message.author.username}#${message.author.discriminator}`,
-      to: `${toUser.username}#${toUser.discriminator}`,
-      amount,
-      tokenType,
-      exp: Math.floor(Date.now() / 1000) + 5 * 60,
-    };
-
-    const token = jwt.sign(payload, JWT_SECRET);
-    const link = `${SITE_URL}/enviar/${token}`;
-
+  
+    const channelId = message.channel.id; // Obtém o ID do canal onde o comando foi executado
+  
     const thread = await message.startThread({
-      name: `Send to ${toUser.username}`,
+      name: `Envio para ${toUser.username}`,
       autoArchiveDuration: 60,
     });
-
+  
+    const threadId = thread.id; // Obtém o ID da thread recém-criada
+  
+    const payload = {
+      creatorUser: `${message.author.username}#${message.author.discriminator}`,
+      toDiscordId: `${toUser.username}#${toUser.discriminator}`,
+      amount,
+      coinType: tokenType,
+      threadId,
+      channelId,
+      exp: Math.floor(Date.now() / 1000) + 5 * 60, // Expira em 5 minutos
+    };
+  
+    const token = jwt.sign(payload, JWT_SECRET);
+    const link = `${SITE_URL}/enviar/${token}`;
+  
     await thread.send(
-      `💸 ${message.author} wants to send **${amount} ${tokenType}** to ${toUser}!\n` +
-      `🔗 Complete it here: ${link}`
+      `💸 ${message.author} deseja enviar **${amount} ${tokenType}** para ${toUser}!\n` +
+      `🔗 Complete a transação aqui: ${link}`
     );
   }
+  
 
   // Antigo comando de teste
   if (message.content === "!ping") {
